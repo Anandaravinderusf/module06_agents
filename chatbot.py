@@ -5,14 +5,15 @@ HANDOFF_WORDS = ["address", "payment", "card"]
 
 
 class SupportChatbot:
-    """A mock support chatbot using simple keyword rules."""
+    """A support chatbot. Rules handle what must be right. A model handles the rest."""
 
-    def __init__(self, name, instructions, order_tool, stock_tool):
-        """Set up the chatbot with its tools and conversation history."""
+    def __init__(self, name, instructions, order_tool, stock_tool, model):
+        """Set up one chatbot with its own name, instructions, tools, model, and history."""
         self.name = name
         self.instructions = instructions
         self.order_tool = order_tool
-        self.stock_tool = stock_tool  # Store the inventory tool for stock requests.
+        self.stock_tool = stock_tool
+        self.model = model
         self.history = []
 
     def respond(self, user_message):
@@ -23,7 +24,7 @@ class SupportChatbot:
         return reply
 
     def choose_reply(self, user_message):
-        """Choose a reply based on keyword rules."""
+        """Use a rule when one applies. Otherwise ask the model."""
         text = user_message.lower()
 
         if self.needs_human(text):
@@ -32,13 +33,17 @@ class SupportChatbot:
         if "order" in text:
             return self.order_reply(user_message)
 
-        if "stock" in text:  # Identify inventory questions.
-            return self.stock_reply(user_message)  # Ask the stock tool for an answer.
+        if "stock" in text:
+            return self.stock_reply(user_message)
 
-        if "hello" in text:
-            return f"Hello! I'm {self.name}. I can check an order status for you."
+        return self.model_reply()
 
-        return "I'm not sure how to help with that. I can check an order status."
+    def model_reply(self):
+        """Ask the model for a reply. Give a safe answer if the model has none."""
+        reply = self.model.reply(self.instructions, self.history)
+        if reply is None:
+            return "Sorry, I can't answer that right now. Please try again in a moment."
+        return reply
 
     def needs_human(self, text):
         """Return True for requests requiring human approval."""
@@ -57,10 +62,10 @@ class SupportChatbot:
 
     def stock_reply(self, user_message):
         """Use the stock tool to answer an inventory question."""
-        product = self.stock_tool.find_product(user_message)  # Identify the item.
-        if product is None:  # Ask for clarification if no item matches.
+        product = self.stock_tool.find_product(user_message)
+        if product is None:
             return "Which product? Please name the item you want me to check."
-        count = self.stock_tool.count_for(product)  # Look up available quantity.
+        count = self.stock_tool.count_for(product)
         return f"We have {count} of the {product} in stock."
 
     def count_user_messages(self):

@@ -5,56 +5,57 @@ HANDOFF_WORDS = ["change my", "transfer money", "send money", "approve my"]
 
 
 class BankingAssistant:
-    """A mock banking FAQ assistant with a separate lookup tool."""
+    """A banking FAQ assistant that uses a lookup tool and a model."""
 
-    def __init__(self, name, faq_tool):
-        """Give each assistant a name, a tool, and its own history."""
-        self.name = name  # Store this assistant's name.
-        self.faq_tool = faq_tool  # Store the FAQ lookup tool.
-        self.history = []  # Start a separate conversation history.
+    def __init__(self, name, instructions, faq_tool, model):
+        """Store the assistant's settings, tools, and conversation history."""
+        self.name = name  # Store the assistant's name.
+        self.instructions = instructions  # Store instructions for the model.
+        self.faq_tool = faq_tool  # Store the banking FAQ lookup tool.
+        self.model = model  # Store the model used for other questions.
+        self.history = []  # Keep a separate conversation history.
 
     def respond(self, user_message):
-        """Record a user message and the assistant's reply."""
-        self.history.append(
-            {"role": "user", "content": user_message}
-        )  # Save the user's message.
-
-        reply = self.choose_reply(user_message)  # Select a response.
-
-        self.history.append(
-            {"role": "assistant", "content": reply}
-        )  # Save the assistant's reply.
-
-        return reply  # Return the response to the caller.
+        """Save the user's message and the assistant's response."""
+        self.history.append({"role": "user", "content": user_message})
+        reply = self.choose_reply(user_message)
+        self.history.append({"role": "assistant", "content": reply})
+        return reply
 
     def choose_reply(self, user_message):
-        """Choose between a handoff, FAQ lookup, or safe reply."""
-        text = user_message.lower()  # Normalize the message.
+        """Check banking rules first, then use the model."""
+        text = user_message.lower()
 
-        for word in HANDOFF_WORDS:  # Check requests needing approval.
-            if word in text:  # Identify a sensitive action.
+        for word in HANDOFF_WORDS:
+            if word in text:
                 return (
                     "I can't make that change. I'll refer you to a bank representative."
                 )
 
-        if "hello" in text:  # Handle a greeting.
-            return f"Hello! I'm {self.name}. I can answer common banking questions."
+        topic = self.faq_tool.find_topic(user_message)
+        if topic is not None:
+            return self.faq_reply(user_message)
 
-        if "?" in text or "tell me" in text:  # Recognize a question.
-            return self.faq_reply(user_message)  # Use the separate FAQ tool.
-
-        return "I'm not sure how to help with that. I can answer banking FAQs."
+        return self.model_reply()
 
     def faq_reply(self, user_message):
-        """Use the FAQ tool without inventing an answer."""
-        topic = self.faq_tool.find_topic(user_message)  # Find a matching topic.
+        """Use the FAQ tool to answer supported banking questions."""
+        topic = self.faq_tool.find_topic(user_message)
 
-        if topic is None:  # Handle an unsuccessful lookup.
-            return "I don't have that information. Ask about business loans, savings accounts, or wire transfers."
+        if topic is None:
+            return "I couldn't find a matching banking topic."
 
-        answer = self.faq_tool.get_answer(topic)  # Retrieve the stored answer.
-
-        if answer is None:  # Handle missing information safely.
+        answer = self.faq_tool.get_answer(topic)
+        if answer is None:
             return "I couldn't find an answer for that topic."
 
-        return answer  # Return the verified mock FAQ answer.
+        return answer
+
+    def model_reply(self):
+        """Ask the model for a reply, or give a safe fallback."""
+        reply = self.model.reply(self.instructions, self.history)
+
+        if reply is None:
+            return "Sorry, I can't answer that right now. Please contact a bank representative."
+
+        return reply
