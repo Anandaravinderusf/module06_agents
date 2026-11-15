@@ -86,8 +86,12 @@ ruff check .
 pytest -v
 ```
 
-The project has 27 passing tests: 15 for the support chatbot and 12 for the banking assistant. The tests use mock models and do not need Ollama running.
+The project includes 44 passing tests: 16 support chatbot tests, 16 banking assistant tests, and 12 tool tests. All tests run without Ollama.
 
 ## AI Use Documentation
 
 The project uses the instructor's provided examples for its original classes and model integration. Additional AI-assisted class code and explanations are recorded in `ai_output.md`.
+
+## Week 12 — Tools and Guardrails
+
+In Week 12, I updated Finley so the model can choose when to use the banking FAQ tool or request a contact preference change. When I asked about business loans, Finley used the FAQ tool and correctly explained that an application and credit review are required. In one of my tests, the model requested a contact change for customer C101 even though the customer only provided C100, and the toolbox refused the request. I also added an instruction telling the model to greet customers normally when they only say hello, instead of unnecessarily using a tool. Contact preference changes stay pending until staff approves them, which prevents the model from making changes on its own.

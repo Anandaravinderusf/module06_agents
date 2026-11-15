@@ -7,21 +7,29 @@ class BankFAQTool:
 
     def __init__(self, faqs):
         """Store the available FAQ topics and answers."""
-        self.faqs = faqs  # Keep the FAQ dictionary on this tool object.
+        self.faqs = faqs
 
     def find_topic(self, text):
         """Find a known FAQ topic mentioned in a message."""
-        text = text.lower()  # Make matching case-insensitive.
-
-        for topic in self.faqs:  # Check every available topic.
-            if topic in text:  # Look for the topic in the message.
-                return topic  # Return the first matching topic.
-
-        return None  # No FAQ topic matched the message.
+        text = text.lower()
+        for topic in self.faqs:
+            if topic in text:
+                return topic
+        return None
 
     def get_answer(self, topic):
         """Return an FAQ answer, or None if the topic is unknown."""
-        if topic in self.faqs:  # Check that the topic exists.
-            return self.faqs[topic]  # Return the stored answer.
+        if topic in self.faqs:
+            return self.faqs[topic]
+        return None
 
-        return None  # Do not invent an answer for unknown topics.
+    def look_up_faq(self, topic):
+        """Look up information about a banking topic.
+
+        Args:
+            topic: The banking topic, like business loans.
+        """
+        found = self.find_topic(topic)
+        if found is None:
+            return "I don't have information about that banking topic."
+        return self.get_answer(found)
